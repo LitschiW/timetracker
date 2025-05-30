@@ -1,0 +1,11 @@
+Write a Desktop Application with a graphical User interface that can be used to track working hours.
+It should have a small window that is always on top.
+The Window should display 
+- a Button that can start and stop a work time timer
+- a Button to stop and start a secondary "pause"-tracking Timer 
+- a button to reset the time
+- the current total time and total pause time
+The app should track the current session and save the state on pause or reset.
+The app should also track and display the total weekly time(starting on and including Monday).
+
+The app should be written in GO using a GUI library.
