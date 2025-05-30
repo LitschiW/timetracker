@@ -14,7 +14,6 @@ A desktop application for tracking working hours with pause functionality. The a
 ## Requirements
 
 - Go 1.23.0 or later
-- Fyne GUI toolkit
 
 ## Installation
 
@@ -43,10 +42,7 @@ To build a standalone executable that can be distributed and run without Go inst
 # For Windows
 go build -o timetracker.exe
 
-# For Linux
-go build -o timetracker
-
-# For macOS
+# For Linux/macOS
 go build -o timetracker
 ```
 
@@ -79,6 +75,6 @@ The built executables are available:
 
 - Click the "Start/Stop" button to begin/end work time tracking
 - Use the "Pause" button to track break time
-- "Reset" button clears the current session
+- "Reset" button stops the current session
 - The application automatically saves state on pause or reset
 - Weekly statistics are automatically tracked and displayed 
