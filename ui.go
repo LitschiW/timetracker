@@ -94,9 +94,12 @@ func (ui *UI) formatDuration(d time.Duration) string {
 }
 
 func (ui *UI) updateLabels() {
-	ui.timeLabel.SetText("Time: " + ui.formatDuration(ui.timer.GetCurrentTime()))
-	ui.pauseLabel.SetText("Pause: " + ui.formatDuration(ui.timer.GetCurrentPauseTime()))
-	ui.weeklyLabel.SetText("Weekly: " + ui.formatDuration(ui.timer.GetWeeklyTime()))
+	fyne.Do(
+		func() {
+			ui.timeLabel.SetText("Time: " + ui.formatDuration(ui.timer.GetCurrentTime()))
+			ui.pauseLabel.SetText("Pause: " + ui.formatDuration(ui.timer.GetCurrentPauseTime()))
+			ui.weeklyLabel.SetText("Weekly: " + ui.formatDuration(ui.timer.GetWeeklyTime()))
+		})
 }
 
 func (ui *UI) handleStartStop() {

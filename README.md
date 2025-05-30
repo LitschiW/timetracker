@@ -13,7 +13,7 @@ A desktop application for tracking working hours with pause functionality. The a
 
 ## Requirements
 
-- Go 1.21 or later
+- Go 1.23.0 or later
 - Fyne GUI toolkit
 
 ## Installation
