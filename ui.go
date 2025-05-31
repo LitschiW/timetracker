@@ -199,7 +199,7 @@ func (ui *UI) handleCancel() {
 }
 
 func (ui *UI) startUpdateTicker() {
-	ui.updateTicker = time.NewTicker(time.Second)
+	ui.updateTicker = time.NewTicker(250 * time.Millisecond)
 	go func() {
 		for {
 			select {
