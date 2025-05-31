@@ -45,9 +45,9 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 }
 
 func (ui *UI) createWidgets() {
-	ui.timeLabel = widget.NewLabel("Time: 0:00:00")
-	ui.pauseLabel = widget.NewLabel("Pause: 0:00:00")
-	ui.weeklyLabel = widget.NewLabel("Weekly: 0:00:00")
+	ui.timeLabel = widget.NewLabel("Current Session: 0:00:00")
+	ui.pauseLabel = widget.NewLabel("Current Break Time: 0:00:00")
+	ui.weeklyLabel = widget.NewLabel("This Weeks Total: 0:00:00")
 
 	ui.startButton = widget.NewButton("Start", ui.handleStartStop)
 	ui.pauseButton = widget.NewButton("Pause", ui.handlePause)
@@ -55,10 +55,10 @@ func (ui *UI) createWidgets() {
 
 	// Update button states based on timer state
 	if ui.timer.IsRunning {
-		ui.startButton.SetText("Stop")
+		ui.startButton.SetText("Stop Working Session")
 	}
 	if ui.timer.IsPaused {
-		ui.pauseButton.SetText("Resume")
+		ui.pauseButton.SetText("Resume Working Session")
 	}
 }
 
@@ -96,19 +96,20 @@ func (ui *UI) formatDuration(d time.Duration) string {
 func (ui *UI) updateLabels() {
 	fyne.Do(
 		func() {
-			ui.timeLabel.SetText("Time: " + ui.formatDuration(ui.timer.GetCurrentTime()))
-			ui.pauseLabel.SetText("Pause: " + ui.formatDuration(ui.timer.GetCurrentPauseTime()))
-			ui.weeklyLabel.SetText("Weekly: " + ui.formatDuration(ui.timer.GetWeeklyTime()))
+			ui.timeLabel.SetText("Current Session: " + ui.formatDuration(ui.timer.GetCurrentTime()))
+			ui.pauseLabel.SetText("Current Break Time: " + ui.formatDuration(ui.timer.GetCurrentPauseTime()))
+			ui.weeklyLabel.SetText("This Weeks Total: " + ui.formatDuration(ui.timer.GetWeeklyTime()))
 		})
 }
 
 func (ui *UI) handleStartStop() {
 	if ui.timer.IsRunning {
 		ui.timer.Stop()
-		ui.startButton.SetText("Start")
+		ui.startButton.SetText("Start Working Session")
+		ui.pauseButton.SetText("Start Break")
 	} else {
 		ui.timer.Start()
-		ui.startButton.SetText("Stop")
+		ui.startButton.SetText("Stop Working Session")
 	}
 	ui.storage.SaveTimer(ui.timer)
 }
@@ -116,10 +117,10 @@ func (ui *UI) handleStartStop() {
 func (ui *UI) handlePause() {
 	if ui.timer.IsPaused {
 		ui.timer.StopPause()
-		ui.pauseButton.SetText("Pause")
+		ui.pauseButton.SetText("Start\nBreak")
 	} else {
 		ui.timer.StartPause()
-		ui.pauseButton.SetText("Resume")
+		ui.pauseButton.SetText("Stop\nBreak")
 	}
 	ui.storage.SaveTimer(ui.timer)
 }
