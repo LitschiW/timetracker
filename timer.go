@@ -71,8 +71,8 @@ func (t *Timer) StartBreak() {
 
 func (t *Timer) StopBreak() {
 	if t.IsOnBreak {
-		breakDuration := time.Since(t.BreakStart)
-		t.CurrentSession.BreakTime += int64(breakDuration.Seconds())
+		breakDuration := time.Since(t.BreakStart).Seconds()
+		t.CurrentSession.BreakTime += int64(breakDuration)
 		t.IsOnBreak = false
 	}
 }
@@ -129,6 +129,23 @@ func (t *Timer) updateWeeklyTotal() {
 						total += time.Duration(durationDiff) * time.Second
 					}
 				}
+			}
+		}
+	}
+
+	// Add completed sessions from memory that haven't been saved yet
+	for _, session := range t.Sessions {
+		sessionTime, err := time.Parse("2006-01-02", session.Date)
+		if err != nil {
+			continue // Skip invalid dates
+		}
+		sessionWeek := t.getWeekNumber(sessionTime)
+		sessionYear := sessionTime.Year()
+
+		if sessionWeek == currentWeek && sessionYear == currentYear {
+			durationDiff := session.Duration - session.BreakTime
+			if durationDiff > 0 { // Only count positive durations
+				total += time.Duration(durationDiff) * time.Second
 			}
 		}
 	}
