@@ -54,12 +54,8 @@ func (s *Storage) LoadTimer() (*Timer, error) {
 		return nil, err
 	}
 
-	// Load historical sessions from CSV
-	sessions, err := s.loadSessionsFromCSV()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load sessions from CSV: %w", err)
-	}
-	timer.Sessions = sessions
+	// Initialize empty sessions slice
+	timer.Sessions = make([]Session, 0)
 
 	return &timer, nil
 }

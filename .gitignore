@@ -23,4 +23,5 @@ go.work
 # Application specific
 *.db
 timetracker 
-timetracker.json 
+current_session.json 
+sessions.csv

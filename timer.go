@@ -18,12 +18,18 @@ type Timer struct {
 	IsOnBreak      bool      `json:"is_on_break"`
 	BreakStart     time.Time `json:"break_start"`
 	SessionStart   time.Time `json:"session_start"`
+	storage        *Storage  // Add storage field
 }
 
 func NewTimer() *Timer {
 	return &Timer{
 		Sessions: make([]Session, 0),
 	}
+}
+
+// SetStorage sets the storage instance for the timer
+func (t *Timer) SetStorage(s *Storage) {
+	t.storage = s
 }
 
 func (t *Timer) Start() {
@@ -101,18 +107,25 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 	currentWeek := t.getWeekNumber(time.Now())
 	currentYear := time.Now().Year()
 
-	// Sum up completed sessions from this week
-	for _, session := range t.Sessions {
-		sessionTime, err := time.Parse("2006-01-02", session.Date)
-		if err != nil {
-			continue // Skip invalid dates
-		}
-		sessionWeek := t.getWeekNumber(sessionTime)
-		sessionYear := sessionTime.Year()
+	// Load historical sessions from CSV
+	if t.storage != nil {
+		if sessions, err := t.storage.loadSessionsFromCSV(); err == nil {
+			// Sum up completed sessions from this week
+			for _, session := range sessions {
+				sessionTime, err := time.Parse("2006-01-02", session.Date)
+				if err != nil {
+					continue // Skip invalid dates
+				}
+				sessionWeek := t.getWeekNumber(sessionTime)
+				sessionYear := sessionTime.Year()
 
-		if sessionWeek == currentWeek && sessionYear == currentYear {
-			durationDiff := session.Duration - session.BreakTime
-			total += time.Duration(durationDiff) * time.Second
+				if sessionWeek == currentWeek && sessionYear == currentYear {
+					durationDiff := session.Duration - session.BreakTime
+					if durationDiff > 0 { // Only count positive durations
+						total += time.Duration(durationDiff) * time.Second
+					}
+				}
+			}
 		}
 	}
 

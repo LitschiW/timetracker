@@ -17,6 +17,9 @@ func main() {
 		timer = NewTimer()
 	}
 
+	// Set storage on timer for weekly calculations
+	timer.SetStorage(storage)
+
 	// Create UI
 	ui := NewUI(application, timer, storage)
 
