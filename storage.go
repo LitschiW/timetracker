@@ -81,7 +81,7 @@ func (s *Storage) appendSessionsToCSV(sessions []Session) error {
 		return err
 	}
 	if stat.Size() == 0 {
-		if err := writer.Write([]string{"date", "duration_s", "pause_time_s"}); err != nil {
+		if err := writer.Write([]string{"date", "duration_s", "break_time_s"}); err != nil {
 			return err
 		}
 	}
@@ -91,7 +91,7 @@ func (s *Storage) appendSessionsToCSV(sessions []Session) error {
 		record := []string{
 			session.Date,
 			strconv.FormatInt(session.Duration, 10),
-			strconv.FormatInt(session.PauseTime, 10),
+			strconv.FormatInt(session.BreakTime, 10),
 		}
 		if err := writer.Write(record); err != nil {
 			return err
@@ -136,7 +136,7 @@ func (s *Storage) loadSessionsFromCSV() ([]Session, error) {
 			continue
 		}
 
-		pauseTime, err := strconv.ParseInt(record[2], 10, 64)
+		breakTime, err := strconv.ParseInt(record[2], 10, 64)
 		if err != nil {
 			continue
 		}
@@ -144,7 +144,7 @@ func (s *Storage) loadSessionsFromCSV() ([]Session, error) {
 		sessions = append(sessions, Session{
 			Date:      record[0],
 			Duration:  duration,
-			PauseTime: pauseTime,
+			BreakTime: breakTime,
 		})
 	}
 

@@ -8,15 +8,15 @@ import (
 type Session struct {
 	Date      string `json:"date"`
 	Duration  int64  `json:"duration_s"`
-	PauseTime int64  `json:"pause_time_s"`
+	BreakTime int64  `json:"break_time_s"`
 }
 
 type Timer struct {
 	CurrentSession *Session  `json:"current_session"`
 	Sessions       []Session `json:"sessions"`
 	IsRunning      bool      `json:"is_running"`
-	IsPaused       bool      `json:"is_paused"`
-	PauseStart     time.Time `json:"pause_start"`
+	IsOnBreak      bool      `json:"is_on_break"`
+	BreakStart     time.Time `json:"break_start"`
 	SessionStart   time.Time `json:"session_start"`
 }
 
@@ -39,8 +39,8 @@ func (t *Timer) Start() {
 
 func (t *Timer) Stop() {
 	if t.IsRunning {
-		if t.IsPaused {
-			t.StopPause()
+		if t.IsOnBreak {
+			t.StopBreak()
 		}
 
 		t.CurrentSession.Duration = int64(time.Since(t.SessionStart).Seconds())
@@ -53,28 +53,26 @@ func (t *Timer) Stop() {
 	}
 }
 
-func (t *Timer) StartPause() {
-	if t.IsRunning && !t.IsPaused {
-		t.PauseStart = time.Now()
-		t.IsPaused = true
+func (t *Timer) StartBreak() {
+	if t.IsRunning && !t.IsOnBreak {
+		t.BreakStart = time.Now()
+		t.IsOnBreak = true
 	}
 }
 
-func (t *Timer) StopPause() {
-	if t.IsPaused {
-		pauseDuration := time.Since(t.PauseStart)
-		t.CurrentSession.PauseTime += int64(pauseDuration.Seconds())
-		t.IsPaused = false
+func (t *Timer) StopBreak() {
+	if t.IsOnBreak {
+		breakDuration := time.Since(t.BreakStart)
+		t.CurrentSession.BreakTime += int64(breakDuration.Seconds())
+		t.IsOnBreak = false
 	}
 }
 
 func (t *Timer) Reset() {
-	if t.IsRunning {
-		t.Stop()
-	}
+	// Don't save the current session when resetting
 	t.CurrentSession = nil
 	t.IsRunning = false
-	t.IsPaused = false
+	t.IsOnBreak = false
 }
 
 func (t *Timer) GetCurrentTime() time.Duration {
@@ -83,19 +81,19 @@ func (t *Timer) GetCurrentTime() time.Duration {
 	}
 
 	duration := time.Since(t.SessionStart)
-	return duration - time.Duration(t.CurrentSession.PauseTime)*time.Second
+	return duration - time.Duration(t.CurrentSession.BreakTime)*time.Second
 }
 
-func (t *Timer) GetCurrentPauseTime() time.Duration {
+func (t *Timer) GetCurrentBreakTime() time.Duration {
 	if !t.IsRunning || t.CurrentSession == nil {
 		return 0
 	}
 
-	if t.IsPaused {
-		currentPause := time.Since(t.PauseStart)
-		return time.Duration(t.CurrentSession.PauseTime)*time.Second + currentPause
+	if t.IsOnBreak {
+		currentBreak := time.Since(t.BreakStart)
+		return time.Duration(t.CurrentSession.BreakTime)*time.Second + currentBreak
 	}
-	return time.Duration(t.CurrentSession.PauseTime) * time.Second
+	return time.Duration(t.CurrentSession.BreakTime) * time.Second
 }
 
 func (t *Timer) GetWeeklyTime() time.Duration {
@@ -113,7 +111,7 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 		sessionYear := sessionTime.Year()
 
 		if sessionWeek == currentWeek && sessionYear == currentYear {
-			durationDiff := session.Duration - session.PauseTime
+			durationDiff := session.Duration - session.BreakTime
 			total += time.Duration(durationDiff) * time.Second
 		}
 	}
