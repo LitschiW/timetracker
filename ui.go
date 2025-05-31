@@ -63,9 +63,23 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 }
 
 func (ui *UI) createWidgets() {
-	ui.timeLabel = widget.NewLabel(fmt.Sprintf(formatCurrentSession, "0:00:00"))
-	ui.breakLabel = widget.NewLabel(fmt.Sprintf(formatBreakTime, "0:00:00"))
-	ui.weeklyLabel = widget.NewLabel(fmt.Sprintf(formatWeeklyTotal, "0:00:00"))
+	// Create labels with right-aligned text
+	ui.timeLabel = widget.NewLabel("0:00:00")
+	ui.breakLabel = widget.NewLabel("0:00:00")
+	ui.weeklyLabel = widget.NewLabel("0:00:00")
+
+	// Create static label descriptions
+	timeDesc := widget.NewLabel("Current Session:")
+	breakDesc := widget.NewLabel("Current Break Time:")
+	weeklyDesc := widget.NewLabel("This Week's Total:")
+
+	// Set alignment for all labels
+	timeDesc.Alignment = fyne.TextAlignTrailing
+	breakDesc.Alignment = fyne.TextAlignTrailing
+	weeklyDesc.Alignment = fyne.TextAlignTrailing
+	ui.timeLabel.Alignment = fyne.TextAlignLeading
+	ui.breakLabel.Alignment = fyne.TextAlignLeading
+	ui.weeklyLabel.Alignment = fyne.TextAlignLeading
 
 	ui.startButton = widget.NewButton(textStart, ui.handleStartStop)
 	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
@@ -76,6 +90,24 @@ func (ui *UI) createWidgets() {
 }
 
 func (ui *UI) layoutWidgets() {
+	// Create static label descriptions
+	timeDesc := widget.NewLabel("Current Session:")
+	breakDesc := widget.NewLabel("Current Break Time:")
+	weeklyDesc := widget.NewLabel("This Week's Total:")
+
+	// Set alignment for description labels
+	timeDesc.Alignment = fyne.TextAlignTrailing
+	breakDesc.Alignment = fyne.TextAlignTrailing
+	weeklyDesc.Alignment = fyne.TextAlignTrailing
+
+	// Create grid for labels
+	labelGrid := container.NewGridWithColumns(2,
+		timeDesc, ui.timeLabel,
+		breakDesc, ui.breakLabel,
+		weeklyDesc, ui.weeklyLabel,
+	)
+
+	// Create button container
 	buttons := container.NewVBox(
 		layout.NewSpacer(),
 		ui.startButton,
@@ -86,14 +118,16 @@ func (ui *UI) layoutWidgets() {
 		layout.NewSpacer(),
 	)
 
+	// Add extra spacing to shift content right
+	labelContainer := container.NewHBox(
+		labelGrid,
+	)
+
+	// Main content layout
 	content := container.NewVBox(
-		layout.NewSpacer(),
-		container.NewHBox(layout.NewSpacer(), ui.timeLabel, layout.NewSpacer()),
-		container.NewHBox(layout.NewSpacer(), ui.breakLabel, layout.NewSpacer()),
-		container.NewHBox(layout.NewSpacer(), ui.weeklyLabel, layout.NewSpacer()),
+		labelContainer,
 		layout.NewSpacer(),
 		container.NewHBox(layout.NewSpacer(), buttons, layout.NewSpacer()),
-		layout.NewSpacer(),
 	)
 
 	ui.window.SetContent(content)
@@ -112,9 +146,9 @@ func (ui *UI) formatDuration(d time.Duration) string {
 func (ui *UI) updateLabels() {
 	fyne.Do(
 		func() {
-			ui.timeLabel.SetText(fmt.Sprintf(formatCurrentSession, ui.formatDuration(ui.timer.GetCurrentTime())))
-			ui.breakLabel.SetText(fmt.Sprintf(formatBreakTime, ui.formatDuration(ui.timer.GetCurrentBreakTime())))
-			ui.weeklyLabel.SetText(fmt.Sprintf(formatWeeklyTotal, ui.formatDuration(ui.timer.GetWeeklyTime())))
+			ui.timeLabel.SetText(ui.formatDuration(ui.timer.GetCurrentTime()))
+			ui.breakLabel.SetText(ui.formatDuration(ui.timer.GetCurrentBreakTime()))
+			ui.weeklyLabel.SetText(ui.formatDuration(ui.timer.GetWeeklyTime()))
 		})
 }
 
