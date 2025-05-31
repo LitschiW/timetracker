@@ -137,7 +137,16 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 			sessionYear := sessionTime.Year()
 
 			if sessionWeek == currentWeek && sessionYear == currentYear {
-				total += t.GetCurrentTime()
+				// Calculate current session duration excluding breaks
+				currentDuration := time.Since(t.SessionStart)
+				totalBreakTime := time.Duration(t.CurrentSession.BreakTime) * time.Second
+				if t.IsOnBreak {
+					totalBreakTime += time.Since(t.BreakStart)
+				}
+				workDuration := currentDuration - totalBreakTime
+				if workDuration > 0 {
+					total += workDuration
+				}
 			}
 		}
 	}
