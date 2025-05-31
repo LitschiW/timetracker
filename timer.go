@@ -12,13 +12,14 @@ type Session struct {
 }
 
 type Timer struct {
-	CurrentSession *Session  `json:"current_session"`
-	Sessions       []Session `json:"sessions"`
-	IsRunning      bool      `json:"is_running"`
-	IsOnBreak      bool      `json:"is_on_break"`
-	BreakStart     time.Time `json:"break_start"`
-	SessionStart   time.Time `json:"session_start"`
-	storage        *Storage  // Add storage field
+	CurrentSession *Session      `json:"current_session"`
+	Sessions       []Session     `json:"sessions"`
+	IsRunning      bool          `json:"is_running"`
+	IsOnBreak      bool          `json:"is_on_break"`
+	BreakStart     time.Time     `json:"break_start"`
+	SessionStart   time.Time     `json:"session_start"`
+	storage        *Storage      // Add storage field
+	weeklyTotal    time.Duration // Cached weekly total
 }
 
 func NewTimer() *Timer {
@@ -27,9 +28,10 @@ func NewTimer() *Timer {
 	}
 }
 
-// SetStorage sets the storage instance for the timer
+// SetStorage sets the storage instance for the timer and updates weekly total
 func (t *Timer) SetStorage(s *Storage) {
 	t.storage = s
+	t.updateWeeklyTotal() // Initialize weekly total on storage set
 }
 
 func (t *Timer) Start() {
@@ -53,6 +55,7 @@ func (t *Timer) Stop() {
 		// Only store sessions longer than 1 second
 		if t.CurrentSession.Duration > 1 {
 			t.Sessions = append(t.Sessions, *t.CurrentSession)
+			t.updateWeeklyTotal() // Update weekly total when adding new session
 		}
 		t.CurrentSession = nil
 		t.IsRunning = false
@@ -102,7 +105,8 @@ func (t *Timer) GetCurrentBreakTime() time.Duration {
 	return time.Duration(t.CurrentSession.BreakTime) * time.Second
 }
 
-func (t *Timer) GetWeeklyTime() time.Duration {
+// updateWeeklyTotal recalculates and caches the weekly total
+func (t *Timer) updateWeeklyTotal() {
 	var total time.Duration
 	currentWeek := t.getWeekNumber(time.Now())
 	currentYear := time.Now().Year()
@@ -129,12 +133,21 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 		}
 	}
 
+	t.weeklyTotal = total
+}
+
+func (t *Timer) GetWeeklyTime() time.Duration {
+	// Return cached total plus current session if running
+	total := t.weeklyTotal
+
 	// Add current session if running
 	if t.IsRunning && t.CurrentSession != nil {
 		sessionTime, err := time.Parse("2006-01-02", t.CurrentSession.Date)
 		if err == nil { // Only add if date is valid
 			sessionWeek := t.getWeekNumber(sessionTime)
 			sessionYear := sessionTime.Year()
+			currentWeek := t.getWeekNumber(time.Now())
+			currentYear := time.Now().Year()
 
 			if sessionWeek == currentWeek && sessionYear == currentYear {
 				// Calculate current session duration excluding breaks

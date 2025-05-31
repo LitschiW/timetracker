@@ -28,6 +28,8 @@ func (s *Storage) SaveTimer(timer *Timer) error {
 		}
 		// Clear sessions from timer after saving to CSV
 		timer.Sessions = []Session{}
+		// Update weekly total after saving to CSV
+		timer.updateWeeklyTotal()
 	}
 
 	// Then save current state to JSON
@@ -44,7 +46,9 @@ func (s *Storage) LoadTimer() (*Timer, error) {
 	data, err := os.ReadFile(s.jsonFile)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return NewTimer(), nil
+			timer := NewTimer()
+			timer.SetStorage(s)
+			return timer, nil
 		}
 		return nil, err
 	}
@@ -56,6 +60,9 @@ func (s *Storage) LoadTimer() (*Timer, error) {
 
 	// Initialize empty sessions slice
 	timer.Sessions = make([]Session, 0)
+
+	// Set storage and update weekly total
+	timer.SetStorage(s)
 
 	return &timer, nil
 }
