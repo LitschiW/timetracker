@@ -6,10 +6,9 @@ import (
 )
 
 type Session struct {
-	StartTime time.Time     `json:"start_time"`
-	EndTime   time.Time     `json:"end_time"`
-	Duration  time.Duration `json:"duration"`
-	PauseTime time.Duration `json:"pause_time"`
+	Date      string `json:"date"`
+	Duration  int64  `json:"duration_s"`
+	PauseTime int64  `json:"pause_time_s"`
 }
 
 type Timer struct {
@@ -18,6 +17,7 @@ type Timer struct {
 	IsRunning      bool      `json:"is_running"`
 	IsPaused       bool      `json:"is_paused"`
 	PauseStart     time.Time `json:"pause_start"`
+	SessionStart   time.Time `json:"session_start"`
 }
 
 func NewTimer() *Timer {
@@ -28,9 +28,11 @@ func NewTimer() *Timer {
 
 func (t *Timer) Start() {
 	if !t.IsRunning {
+		now := time.Now()
 		t.CurrentSession = &Session{
-			StartTime: time.Now(),
+			Date: now.Format("2006-01-02"),
 		}
+		t.SessionStart = now
 		t.IsRunning = true
 	}
 }
@@ -41,9 +43,11 @@ func (t *Timer) Stop() {
 			t.StopPause()
 		}
 
-		t.CurrentSession.EndTime = time.Now()
-		t.CurrentSession.Duration = t.CurrentSession.EndTime.Sub(t.CurrentSession.StartTime)
-		t.Sessions = append(t.Sessions, *t.CurrentSession)
+		t.CurrentSession.Duration = int64(time.Since(t.SessionStart).Seconds())
+		// Only store sessions longer than 1 second
+		if t.CurrentSession.Duration > 1 {
+			t.Sessions = append(t.Sessions, *t.CurrentSession)
+		}
 		t.CurrentSession = nil
 		t.IsRunning = false
 	}
@@ -59,7 +63,7 @@ func (t *Timer) StartPause() {
 func (t *Timer) StopPause() {
 	if t.IsPaused {
 		pauseDuration := time.Since(t.PauseStart)
-		t.CurrentSession.PauseTime += pauseDuration
+		t.CurrentSession.PauseTime += int64(pauseDuration.Seconds())
 		t.IsPaused = false
 	}
 }
@@ -78,8 +82,8 @@ func (t *Timer) GetCurrentTime() time.Duration {
 		return 0
 	}
 
-	duration := time.Since(t.CurrentSession.StartTime)
-	return duration - t.CurrentSession.PauseTime
+	duration := time.Since(t.SessionStart)
+	return duration - time.Duration(t.CurrentSession.PauseTime)*time.Second
 }
 
 func (t *Timer) GetCurrentPauseTime() time.Duration {
@@ -88,9 +92,10 @@ func (t *Timer) GetCurrentPauseTime() time.Duration {
 	}
 
 	if t.IsPaused {
-		return t.CurrentSession.PauseTime + time.Since(t.PauseStart)
+		currentPause := time.Since(t.PauseStart)
+		return time.Duration(t.CurrentSession.PauseTime)*time.Second + currentPause
 	}
-	return t.CurrentSession.PauseTime
+	return time.Duration(t.CurrentSession.PauseTime) * time.Second
 }
 
 func (t *Timer) GetWeeklyTime() time.Duration {
@@ -100,21 +105,29 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 
 	// Sum up completed sessions from this week
 	for _, session := range t.Sessions {
-		sessionWeek := t.getWeekNumber(session.StartTime)
-		sessionYear := session.StartTime.Year()
+		sessionTime, err := time.Parse("2006-01-02", session.Date)
+		if err != nil {
+			continue // Skip invalid dates
+		}
+		sessionWeek := t.getWeekNumber(sessionTime)
+		sessionYear := sessionTime.Year()
 
 		if sessionWeek == currentWeek && sessionYear == currentYear {
-			total += session.Duration - session.PauseTime
+			durationDiff := session.Duration - session.PauseTime
+			total += time.Duration(durationDiff) * time.Second
 		}
 	}
 
 	// Add current session if running
 	if t.IsRunning && t.CurrentSession != nil {
-		sessionWeek := t.getWeekNumber(t.CurrentSession.StartTime)
-		sessionYear := t.CurrentSession.StartTime.Year()
+		sessionTime, err := time.Parse("2006-01-02", t.CurrentSession.Date)
+		if err == nil { // Only add if date is valid
+			sessionWeek := t.getWeekNumber(sessionTime)
+			sessionYear := sessionTime.Year()
 
-		if sessionWeek == currentWeek && sessionYear == currentYear {
-			total += t.GetCurrentTime()
+			if sessionWeek == currentWeek && sessionYear == currentYear {
+				total += t.GetCurrentTime()
+			}
 		}
 	}
 
