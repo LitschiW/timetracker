@@ -10,6 +10,24 @@ import (
 	"fyne.io/fyne/v2/widget"
 )
 
+const (
+	windowTitle  = "Time Tracker"
+	windowWidth  = 300
+	windowHeight = 150
+
+	// Button text
+	textStart      = "Start Working Session"
+	textStop       = "Stop & Save Working Session"
+	textStartBreak = "Start Break"
+	textStopBreak  = "Stop Break"
+	textCancel     = "Cancel Working Session"
+
+	// Label formats
+	formatCurrentSession = "Current Session: %s"
+	formatBreakTime      = "Current Break Time: %s"
+	formatWeeklyTotal    = "This Week's Total: %s"
+)
+
 type UI struct {
 	window       fyne.Window
 	timer        *Timer
@@ -26,7 +44,7 @@ type UI struct {
 
 func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 	ui := &UI{
-		window:   app.NewWindow("Time Tracker"),
+		window:   app.NewWindow(windowTitle),
 		timer:    timer,
 		storage:  storage,
 		quitChan: make(chan struct{}),
@@ -37,7 +55,7 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 	ui.startUpdateTicker()
 
 	ui.window.SetOnClosed(ui.handleClose)
-	ui.window.Resize(fyne.NewSize(300, 150))
+	ui.window.Resize(fyne.NewSize(windowWidth, windowHeight))
 	ui.window.SetFixedSize(true)
 	ui.window.CenterOnScreen()
 
@@ -45,28 +63,25 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 }
 
 func (ui *UI) createWidgets() {
-	ui.timeLabel = widget.NewLabel("Current Session: 0:00:00")
-	ui.breakLabel = widget.NewLabel("Current Break Time: 0:00:00")
-	ui.weeklyLabel = widget.NewLabel("This Weeks Total: 0:00:00")
+	ui.timeLabel = widget.NewLabel(fmt.Sprintf(formatCurrentSession, "0:00:00"))
+	ui.breakLabel = widget.NewLabel(fmt.Sprintf(formatBreakTime, "0:00:00"))
+	ui.weeklyLabel = widget.NewLabel(fmt.Sprintf(formatWeeklyTotal, "0:00:00"))
 
-	ui.startButton = widget.NewButton("Start Working Session", ui.handleStartStop)
-	ui.breakButton = widget.NewButton("Start Break", ui.handleBreak)
-	ui.cancelButton = widget.NewButton("Cancel Working Session", ui.handleCancel)
+	ui.startButton = widget.NewButton(textStart, ui.handleStartStop)
+	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
+	ui.cancelButton = widget.NewButton(textCancel, ui.handleCancel)
 
-	// Update button states based on timer state
-	if ui.timer.IsRunning {
-		ui.startButton.SetText("Stop Working Session")
-	}
-	if ui.timer.IsOnBreak {
-		ui.breakButton.SetText("Resume Working Session")
-	}
+	// Initialize button states
+	ui.updateButtonStates()
 }
 
 func (ui *UI) layoutWidgets() {
 	buttons := container.NewVBox(
 		layout.NewSpacer(),
 		ui.startButton,
+		layout.NewSpacer(),
 		ui.breakButton,
+		layout.NewSpacer(),
 		ui.cancelButton,
 		layout.NewSpacer(),
 	)
@@ -76,7 +91,8 @@ func (ui *UI) layoutWidgets() {
 		container.NewHBox(layout.NewSpacer(), ui.timeLabel, layout.NewSpacer()),
 		container.NewHBox(layout.NewSpacer(), ui.breakLabel, layout.NewSpacer()),
 		container.NewHBox(layout.NewSpacer(), ui.weeklyLabel, layout.NewSpacer()),
-		buttons,
+		layout.NewSpacer(),
+		container.NewHBox(layout.NewSpacer(), buttons, layout.NewSpacer()),
 		layout.NewSpacer(),
 	)
 
@@ -96,39 +112,55 @@ func (ui *UI) formatDuration(d time.Duration) string {
 func (ui *UI) updateLabels() {
 	fyne.Do(
 		func() {
-			ui.timeLabel.SetText("Current Session: " + ui.formatDuration(ui.timer.GetCurrentTime()))
-			ui.breakLabel.SetText("Current Break Time: " + ui.formatDuration(ui.timer.GetCurrentBreakTime()))
-			ui.weeklyLabel.SetText("This Weeks Total: " + ui.formatDuration(ui.timer.GetWeeklyTime()))
+			ui.timeLabel.SetText(fmt.Sprintf(formatCurrentSession, ui.formatDuration(ui.timer.GetCurrentTime())))
+			ui.breakLabel.SetText(fmt.Sprintf(formatBreakTime, ui.formatDuration(ui.timer.GetCurrentBreakTime())))
+			ui.weeklyLabel.SetText(fmt.Sprintf(formatWeeklyTotal, ui.formatDuration(ui.timer.GetWeeklyTime())))
 		})
+}
+
+func (ui *UI) updateButtonStates() {
+	// Start/Stop button text
+	if ui.timer.IsRunning {
+		ui.startButton.SetText(textStop)
+		ui.cancelButton.Enable()
+		ui.breakButton.Enable()
+	} else {
+		ui.startButton.SetText(textStart)
+		ui.cancelButton.Disable()
+		ui.breakButton.Disable()
+	}
+
+	// Break button text
+	if ui.timer.IsOnBreak {
+		ui.breakButton.SetText(textStopBreak)
+	} else {
+		ui.breakButton.SetText(textStartBreak)
+	}
 }
 
 func (ui *UI) handleStartStop() {
 	if ui.timer.IsRunning {
 		ui.timer.Stop()
-		ui.startButton.SetText("Start Working Session")
-		ui.breakButton.SetText("Start Break")
 	} else {
 		ui.timer.Start()
-		ui.startButton.SetText("Stop Working Session")
 	}
+	ui.updateButtonStates()
 	ui.storage.SaveTimer(ui.timer)
 }
 
 func (ui *UI) handleBreak() {
 	if ui.timer.IsOnBreak || !ui.timer.IsRunning {
 		ui.timer.StopBreak()
-		ui.breakButton.SetText("Start Break")
 	} else {
 		ui.timer.StartBreak()
-		ui.breakButton.SetText("Stop Break")
 	}
+	ui.updateButtonStates()
 	ui.storage.SaveTimer(ui.timer)
 }
 
 func (ui *UI) handleCancel() {
 	ui.timer.Reset()
-	ui.startButton.SetText("Start Working Session")
-	ui.breakButton.SetText("Start Break")
+	ui.updateButtonStates()
 	ui.storage.SaveTimer(ui.timer)
 }
 
