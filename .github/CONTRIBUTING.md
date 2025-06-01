@@ -1,53 +1,104 @@
 # Contributing to Time Tracker
 
-Thank you for your interest in contributing to Time Tracker! We welcome contributions from everyone.
-
-## How to Contribute
-
-1. Fork the repository
-2. Create a new branch for your feature or bug fix
-3. Make your changes
-4. Write or update tests as needed
-5. Run the test suite to ensure everything passes
-6. Submit a pull request
+Thank you for your interest in contributing to Time Tracker! This document provides guidelines and instructions for contributing to the project.
 
 ## Development Setup
 
-1. Install Go 1.23.0 or later
-2. Install required dependencies:
+1. **Prerequisites**
+   - Go 1.23.0 or later
+   - Make (or mingw32-make for Windows)
+   - GCC compiler (MinGW-w64 for Windows)
+   - For Linux: `xorg-dev` and `libgl1-mesa-dev` packages
+
+2. **Clone the Repository**
    ```bash
-   # For Linux
-   sudo apt-get update
-   sudo apt-get install -y xorg-dev libgl1-mesa-dev
+   git clone https://github.com/LitschiW/timetracker.git
+   cd timetracker
    ```
-3. Clone your fork
-4. Run `go mod download` to install dependencies
-5. Run `go test ./...` to ensure everything works
 
-## Code Structure
+3. **Install Dependencies**
+   ```bash
+   make deps
+   ```
 
-- `src/` - Main application source code
-- `tests/` - Test files
-- `.github/` - GitHub specific files (workflows, templates, etc.)
+## Development Commands
 
-## Pull Request Guidelines
+The project includes a Makefile with several useful commands:
 
-1. Keep changes focused and atomic
-2. Follow existing code style
-3. Include tests for new features
-4. Update documentation as needed
-5. Add a clear description of your changes
+```bash
+make build       # Build the application
+make run        # Build and run the application
+make test       # Run all tests
+make clean      # Clean build artifacts
+make deps       # Install/update dependencies
+make screenshots # Generate application screenshots
+```
+
+On Windows, you can use either `make` or `mingw32-make` depending on your setup.
+
+## Development Workflow
+
+1. **Create a New Branch**
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. **Make Your Changes**
+   - Write your code
+   - Add tests if applicable
+   - Update documentation if needed
+
+3. **Test Your Changes**
+   ```bash
+   make test
+   ```
+
+4. **Generate Screenshots** (if UI changes)
+   ```bash
+   make screenshots
+   ```
+
+5. **Build and Test Locally**
+   ```bash
+   make run
+   ```
+
+6. **Commit Your Changes**
+   ```bash
+   git add .
+   git commit -m "Description of your changes"
+   ```
+
+7. **Push and Create a Pull Request**
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+   Then create a pull request on GitHub.
+
+## Code Style Guidelines
+
+- Follow standard Go formatting (use `gofmt`)
+- Add comments for non-obvious code
+- Keep functions focused and small
+- Write meaningful commit messages
+
+## Testing
+
+- Add tests for new features
+- Ensure existing tests pass
+- UI tests should use the screenshot test framework
+
+## Documentation
+
+- Update README.md if adding new features
+- Document new commands or configuration options
+- Keep code comments up to date
 
 ## Need Help?
 
-Feel free to open an issue for:
-- Bug reports
-- Feature requests
-- Questions about the codebase
+If you have questions or need help with setup, feel free to:
+- Open an issue
+- Ask questions in pull requests
+- Reach out to maintainers
 
-We appreciate all contributions, whether it's:
-- Code improvements
-- Documentation updates
-- Bug fixes
-- Feature additions
-- UI/UX enhancements 
+Thank you for contributing! 

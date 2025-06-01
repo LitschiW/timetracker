@@ -4,10 +4,12 @@ import (
 	"os"
 	"testing"
 	"time"
+
+	timetracker "github.com/LitschiW/timetracker/pkg/timetracker"
 )
 
 func TestTimerBasicOperations(t *testing.T) {
-	timer := NewTimer()
+	timer := timetracker.NewTimer()
 
 	// Test initial state
 	if timer.IsRunning {
@@ -58,12 +60,9 @@ func TestTimerWeeklyTotal(t *testing.T) {
 	defer os.Remove(tmpJSON)
 	defer os.Remove(tmpCSV)
 
-	storage := &Storage{
-		jsonFile: tmpJSON,
-		csvFile:  tmpCSV,
-	}
+	storage := timetracker.NewStorage()
 
-	timer := NewTimer()
+	timer := timetracker.NewTimer()
 	timer.SetStorage(storage)
 
 	// Test empty state
@@ -95,7 +94,7 @@ func TestTimerWeeklyTotal(t *testing.T) {
 }
 
 func TestBreakTimeExclusion(t *testing.T) {
-	timer := NewTimer()
+	timer := timetracker.NewTimer()
 
 	// Start a session
 	timer.Start()
@@ -119,7 +118,7 @@ func TestBreakTimeExclusion(t *testing.T) {
 }
 
 func TestShortSessionExclusion(t *testing.T) {
-	timer := NewTimer()
+	timer := timetracker.NewTimer()
 
 	// Start and immediately stop
 	timer.Start()
@@ -138,12 +137,9 @@ func TestWeeklyTotalCache(t *testing.T) {
 	defer os.Remove(tmpJSON)
 	defer os.Remove(tmpCSV)
 
-	storage := &Storage{
-		jsonFile: tmpJSON,
-		csvFile:  tmpCSV,
-	}
+	storage := timetracker.NewStorage()
 
-	timer := NewTimer()
+	timer := timetracker.NewTimer()
 	timer.SetStorage(storage)
 
 	// Add multiple sessions

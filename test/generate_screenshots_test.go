@@ -10,6 +10,8 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+
+	timetracker "github.com/LitschiW/timetracker/pkg/timetracker"
 )
 
 func TestGenerateScreenshots(t *testing.T) {
@@ -24,14 +26,14 @@ func TestGenerateScreenshots(t *testing.T) {
 
 	// Create a new test app
 	a := test.NewApp()
-	storage := NewStorage()
-	timer := NewTimer()
-	ui := NewUI(a, timer, storage)
+	storage := timetracker.NewStorage()
+	timer := timetracker.NewTimer()
+	ui := timetracker.NewUI(a, timer, storage)
 
 	// Show the window
-	ui.window.Resize(fyne.NewSize(windowWidth, windowHeight))
-	w := test.NewWindow(ui.window.Content())
-	w.Resize(fyne.NewSize(windowWidth, windowHeight))
+	ui.Window.Resize(fyne.NewSize(timetracker.WindowWidth, timetracker.WindowHeight))
+	w := test.NewWindow(ui.Window.Content())
+	w.Resize(fyne.NewSize(timetracker.WindowWidth, timetracker.WindowHeight))
 
 	// Function to capture and save screenshot
 	captureScreen := func(name string) {
@@ -62,11 +64,11 @@ func TestGenerateScreenshots(t *testing.T) {
 	captureScreen("initial_state")
 
 	// 2. Working session started
-	ui.handleStartStop()
+	ui.HandleStartStop()
 	captureScreen("working_session")
 
 	// 3. Break started (wait for 3 dots)
-	ui.handleBreak()
+	ui.HandleBreak()
 	time.Sleep(4500 * time.Millisecond) // Wait for 3 dots to appear
 	captureScreen("break_state")
 

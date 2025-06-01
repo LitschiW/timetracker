@@ -38,24 +38,40 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y xorg-dev libgl1-mesa-dev
 
+    - name: Install Dependencies
+      run: make deps
+
     - name: Run Tests (Windows)
       if: matrix.os == 'windows-latest'
       run: go test -v ./... -run '^Test[^S]' # Run all tests except screenshot tests
 
     - name: Run Tests (Linux)
       if: matrix.os == 'ubuntu-latest'
-      run: go test -v ./... # Run all tests including screenshots
+      run: make test # Run all tests including screenshots
+
+    - name: Generate Screenshots (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: make screenshots
+
+    - name: Commit Screenshots
+      if: matrix.os == 'ubuntu-latest' && github.event_name == 'push' && github.ref == 'refs/heads/main'
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add screenshots/*.png
+        git diff --quiet && git diff --staged --quiet || git commit -m "[no ci] docs: update application screenshots"
+        git push
 
     - name: Upload Screenshots as Artifact
       if: matrix.os == 'ubuntu-latest'
       uses: actions/upload-artifact@v4
       with:
-        name: inital_state.png
-        path: screenshots/initial_state.png
+        name: screenshots
+        path: screenshots/*.png
         if-no-files-found: error
 
     - name: Build
-      run: go build -v -o ${{ matrix.output_name }}
+      run: make build
 
     - name: Upload artifact
       uses: actions/upload-artifact@v4

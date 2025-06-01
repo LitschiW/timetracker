@@ -8,7 +8,7 @@ Here's how the application looks in action:
 
 | ⏸️ Initial State | ⏳ Running Working Session | ☕ Break Tracking |
 |:---:|:---:|:---:|
-| ![Initial State](.github/screenshots/initial_state.png?raw=true) | ![Running Working Session](.github/screenshots/working_session.png?raw=true) | ![Break Tracking](.github/screenshots/break_state.png?raw=true) |
+| ![Initial State](screenshots/initial_state.png?raw=true) | ![Running Working Session](screenshots/working_session.png?raw=true) | ![Break Tracking](screenshots/break_state.png?raw=true) |
 
 The application maintains a clean, focused interface that helps you track your work time efficiently.
 
@@ -24,6 +24,8 @@ The application maintains a clean, focused interface that helps you track your w
 ## Requirements
 
 - Go 1.23.0 or later
+- Make (or mingw32-make for Windows)
+- GCC compiler (for Windows, install MinGW-w64)
 
 ## Installation
 
@@ -37,29 +39,40 @@ You can download pre-built binaries for Windows and Linux from the [Releases](..
 2. Clone this repository
 3. Install dependencies:
 ```bash
-go mod download
+make deps
 ```
 4. Build and run:
 ```bash
-go run .
+make run
 ```
+
+## Development Commands
+
+The project includes a Makefile with several useful commands:
+
+```bash
+make build       # Build the application
+make run        # Build and run the application
+make test       # Run all tests
+make clean      # Clean build artifacts
+make deps       # Install/update dependencies
+make screenshots # Generate application screenshots
+```
+
+On Windows, you can use either `make` or `mingw32-make` depending on your setup.
 
 ## Building Standalone Executable
 
 To build a standalone executable that can be distributed and run without Go installed:
 
 ```bash
-# For Windows
-go build -o timetracker.exe
-
-# For Linux/macOS
-go build -o timetracker
+make build
 ```
 
 The resulting executable:
 - Can be moved to any location
 - Doesn't require Go to be installed
-- Will create its data file (`timetracker.json`) in the directory it's run from
+- Will create its data files (`current_session.json` and `sessions.csv`) in the directory it's run from
 - Works as a portable application
 
 ### Linux Dependencies
