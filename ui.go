@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -18,8 +20,8 @@ const (
 	// Button text
 	textStart      = "Start Working Session"
 	textStop       = "Stop & Save Working Session"
-	textStartBreak = "Start Break"
-	textStopBreak  = "Stop Break"
+	textStartBreak = "☕ Start Break"
+	textStopBreak  = "☕ Stop Break"
 	textCancel     = "Cancel Working Session"
 
 	// Label formats
@@ -81,9 +83,9 @@ func (ui *UI) createWidgets() {
 	ui.breakLabel.Alignment = fyne.TextAlignLeading
 	ui.weeklyLabel.Alignment = fyne.TextAlignLeading
 
-	ui.startButton = widget.NewButton(textStart, ui.handleStartStop)
+	ui.startButton = widget.NewButtonWithIcon(textStart, theme.MediaPlayIcon(), ui.handleStartStop)
 	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
-	ui.cancelButton = widget.NewButton(textCancel, ui.handleCancel)
+	ui.cancelButton = widget.NewButtonWithIcon(textCancel, theme.CancelIcon(), ui.handleCancel)
 
 	// Initialize button states
 	ui.updateButtonStates()
@@ -149,17 +151,27 @@ func (ui *UI) updateLabels() {
 			ui.timeLabel.SetText(ui.formatDuration(ui.timer.GetCurrentTime()))
 			ui.breakLabel.SetText(ui.formatDuration(ui.timer.GetCurrentBreakTime()))
 			ui.weeklyLabel.SetText(ui.formatDuration(ui.timer.GetWeeklyTime()))
+
+			// Update break button text with animated dots when on break
+			if ui.timer.IsOnBreak {
+				dots := strings.Repeat(".", int(time.Now().Unix()%4))
+				ui.breakButton.SetText("☕ Stop Break" + dots)
+			} else if ui.timer.IsRunning {
+				ui.breakButton.SetText(textStartBreak)
+			}
 		})
 }
 
 func (ui *UI) updateButtonStates() {
-	// Start/Stop button text
+	// Start/Stop button text and icon
 	if ui.timer.IsRunning {
 		ui.startButton.SetText(textStop)
+		ui.startButton.SetIcon(theme.MediaStopIcon())
 		ui.cancelButton.Enable()
 		ui.breakButton.Enable()
 	} else {
 		ui.startButton.SetText(textStart)
+		ui.startButton.SetIcon(theme.MediaPlayIcon())
 		ui.cancelButton.Disable()
 		ui.breakButton.Disable()
 	}
