@@ -14,8 +14,8 @@ import (
 
 const (
 	windowTitle  = "Time Tracker"
-	windowWidth  = 300
-	windowHeight = 150
+	windowWidth  = 340
+	windowHeight = 250
 
 	// Button text
 	textStart      = "Start Working Session"
@@ -37,6 +37,9 @@ type UI struct {
 	timeLabel    *widget.Label
 	breakLabel   *widget.Label
 	weeklyLabel  *widget.Label
+	timeDesc     *widget.Label
+	breakDesc    *widget.Label
+	weeklyDesc   *widget.Label
 	startButton  *widget.Button
 	breakButton  *widget.Button
 	cancelButton *widget.Button
@@ -52,36 +55,38 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 		quitChan: make(chan struct{}),
 	}
 
-	ui.createWidgets()
-	ui.layoutWidgets()
-	ui.startUpdateTicker()
-
 	ui.window.SetOnClosed(ui.handleClose)
 	ui.window.Resize(fyne.NewSize(windowWidth, windowHeight))
 	ui.window.SetFixedSize(true)
 	ui.window.CenterOnScreen()
 
+	ui.createWidgets()
+	ui.layoutWidgets()
+	ui.startUpdateTicker()
+
 	return ui
 }
 
 func (ui *UI) createWidgets() {
-	// Create labels with right-aligned text
+	// Create labels with centered text
 	ui.timeLabel = widget.NewLabel("0:00:00")
 	ui.breakLabel = widget.NewLabel("0:00:00")
 	ui.weeklyLabel = widget.NewLabel("0:00:00")
 
 	// Create static label descriptions
-	timeDesc := widget.NewLabel("Current Session:")
-	breakDesc := widget.NewLabel("Current Break Time:")
-	weeklyDesc := widget.NewLabel("This Week's Total:")
+	ui.timeDesc = widget.NewLabel("Current Session:")
+	ui.breakDesc = widget.NewLabel("Current Break Time:")
+	ui.weeklyDesc = widget.NewLabel("This Week's Total:")
 
-	// Set alignment for all labels
-	timeDesc.Alignment = fyne.TextAlignTrailing
-	breakDesc.Alignment = fyne.TextAlignTrailing
-	weeklyDesc.Alignment = fyne.TextAlignTrailing
-	ui.timeLabel.Alignment = fyne.TextAlignLeading
-	ui.breakLabel.Alignment = fyne.TextAlignLeading
-	ui.weeklyLabel.Alignment = fyne.TextAlignLeading
+	// Set alignment for description labels (right-aligned)
+	ui.timeDesc.Alignment = fyne.TextAlignTrailing
+	ui.breakDesc.Alignment = fyne.TextAlignTrailing
+	ui.weeklyDesc.Alignment = fyne.TextAlignTrailing
+
+	// Set alignment for value labels (centered)
+	ui.timeLabel.Alignment = fyne.TextAlignCenter
+	ui.breakLabel.Alignment = fyne.TextAlignCenter
+	ui.weeklyLabel.Alignment = fyne.TextAlignCenter
 
 	ui.startButton = widget.NewButtonWithIcon(textStart, theme.MediaPlayIcon(), ui.handleStartStop)
 	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
@@ -92,21 +97,11 @@ func (ui *UI) createWidgets() {
 }
 
 func (ui *UI) layoutWidgets() {
-	// Create static label descriptions
-	timeDesc := widget.NewLabel("Current Session:")
-	breakDesc := widget.NewLabel("Current Break Time:")
-	weeklyDesc := widget.NewLabel("This Week's Total:")
-
-	// Set alignment for description labels
-	timeDesc.Alignment = fyne.TextAlignTrailing
-	breakDesc.Alignment = fyne.TextAlignTrailing
-	weeklyDesc.Alignment = fyne.TextAlignTrailing
-
 	// Create grid for labels
 	labelGrid := container.NewGridWithColumns(2,
-		timeDesc, ui.timeLabel,
-		breakDesc, ui.breakLabel,
-		weeklyDesc, ui.weeklyLabel,
+		ui.timeDesc, ui.timeLabel,
+		ui.breakDesc, ui.breakLabel,
+		ui.weeklyDesc, ui.weeklyLabel,
 	)
 
 	// Create button container
@@ -120,14 +115,9 @@ func (ui *UI) layoutWidgets() {
 		layout.NewSpacer(),
 	)
 
-	// Add extra spacing to shift content right
-	labelContainer := container.NewHBox(
-		labelGrid,
-	)
-
-	// Main content layout
+	// Main content layout with centered elements
 	content := container.NewVBox(
-		labelContainer,
+		container.NewHBox(layout.NewSpacer(), labelGrid, layout.NewSpacer()),
 		layout.NewSpacer(),
 		container.NewHBox(layout.NewSpacer(), buttons, layout.NewSpacer()),
 	)

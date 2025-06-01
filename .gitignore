@@ -25,3 +25,6 @@ go.work
 timetracker 
 current_session.json 
 sessions.csv
+
+# Test generated files
+screenshots/

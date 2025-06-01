@@ -38,8 +38,21 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y xorg-dev libgl1-mesa-dev
 
-    - name: Run Tests
-      run: go test -v ./...
+    - name: Run Tests (Windows)
+      if: matrix.os == 'windows-latest'
+      run: go test -v ./... -run '^Test[^S]' # Run all tests except screenshot tests
+
+    - name: Run Tests (Linux)
+      if: matrix.os == 'ubuntu-latest'
+      run: go test -v ./... # Run all tests including screenshots
+
+    - name: Upload Screenshots
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: screenshots
+        path: screenshots/
+        if-no-files-found: error
 
     - name: Build
       run: go build -v -o ${{ matrix.output_name }}
