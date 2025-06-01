@@ -12,6 +12,7 @@ BINARY_NAME=timetracker$(BINARY_EXT)
 
 # Build the application
 build:
+	go mod tidy
 	go mod download
 	go build -o $(BINARY_NAME) ./cmd/timetracker
 
@@ -36,6 +37,7 @@ screenshots:
 
 # Install dependencies
 deps:
+	go mod tidy
 	go mod download
 	go mod tidy
 
