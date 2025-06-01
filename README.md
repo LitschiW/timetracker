@@ -2,6 +2,16 @@
 
 A desktop application for tracking working hours with pause functionality. The application features an always-on-top window that helps you keep track of your work time and breaks.
 
+## Screenshots
+
+Here's how the application looks in action:
+
+| ⏸️ Initial State | ⏳ Running Working Session | ☕ Break Tracking |
+|:---:|:---:|:---:|
+| ![Initial State](.github/screenshots/initial_state.png?raw=true) | ![Running Working Session](.github/screenshots/working_session.png?raw=true) | ![Break Tracking](.github/screenshots/break_state.png?raw=true) |
+
+The application maintains a clean, focused interface that helps you track your work time efficiently.
+
 ## Features
 
 - Start/Stop work timer

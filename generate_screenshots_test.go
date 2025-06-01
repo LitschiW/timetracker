@@ -58,8 +58,6 @@ func TestGenerateScreenshots(t *testing.T) {
 		t.Logf("Saved screenshot: %s", path)
 	}
 
-	// Test different states
-
 	// 1. Initial state
 	captureScreen("initial_state")
 
@@ -69,21 +67,8 @@ func TestGenerateScreenshots(t *testing.T) {
 
 	// 3. Break started (wait for 3 dots)
 	ui.handleBreak()
-	time.Sleep(3500 * time.Millisecond) // Wait for 3 dots to appear
+	time.Sleep(4500 * time.Millisecond) // Wait for 3 dots to appear
 	captureScreen("break_state")
-
-	// 4. Break stopped
-	ui.handleBreak()
-	captureScreen("break_stopped")
-
-	// 5. Session stopped
-	ui.handleStartStop()
-	captureScreen("session_stopped")
-
-	// 6. Session cancelled
-	ui.handleStartStop()
-	ui.handleCancel()
-	captureScreen("session_cancelled")
 
 	// Cleanup
 	w.Close()

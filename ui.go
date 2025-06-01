@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
 
@@ -18,11 +17,11 @@ const (
 	windowHeight = 250
 
 	// Button text
-	textStart      = "Start Working Session"
-	textStop       = "Stop & Save Working Session"
+	textStart      = "▶️ Start Working Session"
+	textStop       = "💾 Stop & Save Session"
 	textStartBreak = "☕ Start Break"
 	textStopBreak  = "☕ Stop Break"
-	textCancel     = "Cancel Working Session"
+	textCancel     = "❌ Cancel Working Session"
 
 	// Label formats
 	formatCurrentSession = "Current Session: %s"
@@ -88,9 +87,10 @@ func (ui *UI) createWidgets() {
 	ui.breakLabel.Alignment = fyne.TextAlignCenter
 	ui.weeklyLabel.Alignment = fyne.TextAlignCenter
 
-	ui.startButton = widget.NewButtonWithIcon(textStart, theme.MediaPlayIcon(), ui.handleStartStop)
+	// Create buttons without theme icons since we're using Unicode icons
+	ui.startButton = widget.NewButton(textStart, ui.handleStartStop)
 	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
-	ui.cancelButton = widget.NewButtonWithIcon(textCancel, theme.CancelIcon(), ui.handleCancel)
+	ui.cancelButton = widget.NewButton(textCancel, ui.handleCancel)
 
 	// Initialize button states
 	ui.updateButtonStates()
@@ -153,15 +153,13 @@ func (ui *UI) updateLabels() {
 }
 
 func (ui *UI) updateButtonStates() {
-	// Start/Stop button text and icon
+	// Start/Stop button text
 	if ui.timer.IsRunning {
 		ui.startButton.SetText(textStop)
-		ui.startButton.SetIcon(theme.MediaStopIcon())
 		ui.cancelButton.Enable()
 		ui.breakButton.Enable()
 	} else {
 		ui.startButton.SetText(textStart)
-		ui.startButton.SetIcon(theme.MediaPlayIcon())
 		ui.cancelButton.Disable()
 		ui.breakButton.Disable()
 	}
