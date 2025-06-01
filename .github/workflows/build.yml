@@ -51,10 +51,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: screenshots
-        path: |
-          screenshots/initial_state.png
-          screenshots/working_session.png
-          screenshots/break_state.png
+        path: screenshots/initial_state.png
         if-no-files-found: error
 
     - name: Build
