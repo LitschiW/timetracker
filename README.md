@@ -88,3 +88,15 @@ The built executables are available:
 - "Reset" button stops the current session
 - The application automatically saves state on pause or reset
 - Weekly statistics are automatically tracked and displayed 
+
+## Contributing
+
+This project was primarily "vibe coded" - built with a focus on getting things working and iterating quickly. While this approach helped us move fast and ship features, there's always room for improvement! We welcome pull requests to:
+
+- Clean up and refactor the code
+- Add new features
+- Improve documentation
+- Fix bugs
+- Enhance the UI/UX
+
+Check out our [Contributing Guide](.github/CONTRIBUTING.md) to get started! 
