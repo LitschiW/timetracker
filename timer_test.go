@@ -16,7 +16,7 @@ func TestTimerBasicOperations(t *testing.T) {
 	if timer.IsOnBreak {
 		t.Error("New timer should not be on break")
 	}
-	if timer.GetCurrentTime() != 0 {
+	if timer.GetTodaySessionTime() != 0 {
 		t.Error("New timer should have 0 current time")
 	}
 
@@ -26,8 +26,8 @@ func TestTimerBasicOperations(t *testing.T) {
 	if !timer.IsRunning {
 		t.Error("Timer should be running after Start")
 	}
-	if timer.CurrentSession == nil {
-		t.Error("Current session should be initialized after Start")
+	if timer.TodaySession == nil {
+		t.Error("Today's session should be initialized after Start")
 	}
 
 	// Test break
@@ -37,7 +37,7 @@ func TestTimerBasicOperations(t *testing.T) {
 	if timer.IsOnBreak {
 		t.Error("Timer should not be on break after StopBreak")
 	}
-	if timer.CurrentSession.BreakTime == 0 {
+	if timer.TodaySession.BreakTime == 0 {
 		t.Error("Break time should be recorded")
 	}
 
