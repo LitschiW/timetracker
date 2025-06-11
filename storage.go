@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"time"
 )
 
 type Storage struct {
@@ -60,6 +61,18 @@ func (s *Storage) LoadTimer() (*Timer, error) {
 
 	// Initialize empty sessions slice
 	timer.Sessions = make([]Session, 0)
+
+	// Check if we need to handle day transition
+	now := time.Now()
+	if !timer.DayFirstStart.IsZero() && timer.DayFirstStart.Format("2006-01-02") != now.Format("2006-01-02") {
+		// Store yesterday's data
+		timer.YesterdayTotal = timer.DailyTotal
+		timer.YesterdayFirstStart = timer.DayFirstStart
+
+		// Reset today's tracking
+		timer.DayFirstStart = time.Time{}
+		timer.DailyTotal = 0
+	}
 
 	// Set storage and update weekly total
 	timer.SetStorage(s)

@@ -13,8 +13,8 @@ import (
 
 const (
 	windowTitle  = "Time Tracker"
-	windowWidth  = 340
-	windowHeight = 250
+	windowWidth  = 350
+	windowHeight = 300
 
 	// Button text
 	textStart      = "▶️ Start Working Session"
@@ -24,26 +24,38 @@ const (
 	textCancel     = "❌ Cancel Working Session"
 
 	// Label formats
-	formatCurrentSession = "Current Session: %s"
-	formatBreakTime      = "Current Break Time: %s"
-	formatWeeklyTotal    = "This Week's Total: %s"
+	formatTodaySession   = "Today's Session: "
+	formatBreakTime      = "Current Break Time: "
+	formatWeeklyTotal    = "This Week's Total: "
+	formatDailyTotal     = "Today's Total: "
+	formatFirstStart     = "Started at: "
+	formatYesterdayStats = "Yesterday's Stats"
 )
 
 type UI struct {
-	window       fyne.Window
-	timer        *Timer
-	storage      *Storage
-	timeLabel    *widget.Label
-	breakLabel   *widget.Label
-	weeklyLabel  *widget.Label
-	timeDesc     *widget.Label
-	breakDesc    *widget.Label
-	weeklyDesc   *widget.Label
-	startButton  *widget.Button
-	breakButton  *widget.Button
-	cancelButton *widget.Button
-	updateTicker *time.Ticker
-	quitChan     chan struct{}
+	window              fyne.Window
+	timer               *Timer
+	storage             *Storage
+	todayTimeLabel      *widget.Label
+	breakLabel          *widget.Label
+	weeklyLabel         *widget.Label
+	dailyLabel          *widget.Label
+	firstStartLabel     *widget.Label
+	yesterdayDailyLabel *widget.Label
+	yesterdayStartLabel *widget.Label
+	todayTimeDesc       *widget.Label
+	breakDesc           *widget.Label
+	weeklyDesc          *widget.Label
+	dailyDesc           *widget.Label
+	firstStartDesc      *widget.Label
+	yesterdayTitle      *widget.Label
+	yesterdayDailyDesc  *widget.Label
+	yesterdayStartDesc  *widget.Label
+	startButton         *widget.Button
+	breakButton         *widget.Button
+	cancelButton        *widget.Button
+	updateTicker        *time.Ticker
+	quitChan            chan struct{}
 }
 
 func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
@@ -67,59 +79,82 @@ func NewUI(app fyne.App, timer *Timer, storage *Storage) *UI {
 }
 
 func (ui *UI) createWidgets() {
-	// Create labels with centered text
-	ui.timeLabel = widget.NewLabel("0:00:00")
-	ui.breakLabel = widget.NewLabel("0:00:00")
-	ui.weeklyLabel = widget.NewLabel("0:00:00")
+	// Create labels with proper alignment
+	ui.todayTimeDesc = widget.NewLabelWithStyle(formatTodaySession, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.todayTimeLabel = widget.NewLabelWithStyle("0:00:00", fyne.TextAlignLeading, fyne.TextStyle{})
+	ui.breakDesc = widget.NewLabelWithStyle(formatBreakTime, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.breakLabel = widget.NewLabelWithStyle("0:00:00", fyne.TextAlignLeading, fyne.TextStyle{})
+	ui.weeklyDesc = widget.NewLabelWithStyle(formatWeeklyTotal, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.weeklyLabel = widget.NewLabelWithStyle("0:00:00", fyne.TextAlignLeading, fyne.TextStyle{})
+	ui.dailyDesc = widget.NewLabelWithStyle(formatDailyTotal, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.dailyLabel = widget.NewLabelWithStyle("0:00:00", fyne.TextAlignLeading, fyne.TextStyle{})
+	ui.firstStartDesc = widget.NewLabelWithStyle(formatFirstStart, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.firstStartLabel = widget.NewLabelWithStyle("Not started today", fyne.TextAlignLeading, fyne.TextStyle{})
 
-	// Create static label descriptions
-	ui.timeDesc = widget.NewLabel("Current Session:")
-	ui.breakDesc = widget.NewLabel("Current Break Time:")
-	ui.weeklyDesc = widget.NewLabel("This Week's Total:")
+	// Create yesterday's stats labels with proper alignment
+	ui.yesterdayTitle = widget.NewLabelWithStyle(formatYesterdayStats, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	ui.yesterdayDailyDesc = widget.NewLabelWithStyle(formatDailyTotal, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.yesterdayDailyLabel = widget.NewLabelWithStyle("0:00:00", fyne.TextAlignLeading, fyne.TextStyle{})
+	ui.yesterdayStartDesc = widget.NewLabelWithStyle(formatFirstStart, fyne.TextAlignTrailing, fyne.TextStyle{})
+	ui.yesterdayStartLabel = widget.NewLabelWithStyle("No data", fyne.TextAlignLeading, fyne.TextStyle{})
 
-	// Set alignment for description labels (right-aligned)
-	ui.timeDesc.Alignment = fyne.TextAlignTrailing
-	ui.breakDesc.Alignment = fyne.TextAlignTrailing
-	ui.weeklyDesc.Alignment = fyne.TextAlignTrailing
-
-	// Set alignment for value labels (centered)
-	ui.timeLabel.Alignment = fyne.TextAlignCenter
-	ui.breakLabel.Alignment = fyne.TextAlignCenter
-	ui.weeklyLabel.Alignment = fyne.TextAlignCenter
-
-	// Create buttons without theme icons since we're using Unicode icons
+	// Create buttons
 	ui.startButton = widget.NewButton(textStart, ui.handleStartStop)
 	ui.breakButton = widget.NewButton(textStartBreak, ui.handleBreak)
 	ui.cancelButton = widget.NewButton(textCancel, ui.handleCancel)
-
-	// Initialize button states
-	ui.updateButtonStates()
+	ui.breakButton.Disable()
+	ui.cancelButton.Disable()
 }
 
 func (ui *UI) layoutWidgets() {
-	// Create grid for labels
-	labelGrid := container.NewGridWithColumns(2,
-		ui.timeDesc, ui.timeLabel,
-		ui.breakDesc, ui.breakLabel,
-		ui.weeklyDesc, ui.weeklyLabel,
-	)
+	// Create grid for today's stats (2 columns)
+	todayGrid := container.NewGridWithColumns(2)
+	todayGrid.Add(ui.todayTimeDesc)
+	todayGrid.Add(ui.todayTimeLabel)
+	todayGrid.Add(ui.breakDesc)
+	todayGrid.Add(ui.breakLabel)
+	todayGrid.Add(ui.dailyDesc)
+	todayGrid.Add(ui.dailyLabel)
+	todayGrid.Add(ui.firstStartDesc)
+	todayGrid.Add(ui.firstStartLabel)
 
-	// Create button container
+	// Create grid for yesterday's stats (2 columns)
+	yesterdayGrid := container.NewGridWithColumns(2)
+	yesterdayGrid.Add(ui.yesterdayDailyDesc)
+	yesterdayGrid.Add(ui.yesterdayDailyLabel)
+	yesterdayGrid.Add(ui.yesterdayStartDesc)
+	yesterdayGrid.Add(ui.yesterdayStartLabel)
+
+	// Create grid for both columns (2 columns)
+	mainGrid := container.NewGridWithColumns(2)
+	mainGrid.Add(todayGrid)
+	mainGrid.Add(container.NewVBox(
+		ui.yesterdayTitle,
+		yesterdayGrid,
+	))
+
+	// Create grid for weekly total (2 columns, spans full width)
+	weeklyGrid := container.NewGridWithColumns(2)
+	weeklyGrid.Add(ui.weeklyDesc)
+	weeklyGrid.Add(ui.weeklyLabel)
+
+	// Create button container with vertical layout
 	buttons := container.NewVBox(
-		layout.NewSpacer(),
 		ui.startButton,
-		layout.NewSpacer(),
 		ui.breakButton,
-		layout.NewSpacer(),
 		ui.cancelButton,
-		layout.NewSpacer(),
 	)
 
-	// Main content layout with centered elements
+	// Layout everything vertically
 	content := container.NewVBox(
-		container.NewHBox(layout.NewSpacer(), labelGrid, layout.NewSpacer()),
+		mainGrid,
+		weeklyGrid,
 		layout.NewSpacer(),
-		container.NewHBox(layout.NewSpacer(), buttons, layout.NewSpacer()),
+		container.NewHBox(
+			layout.NewSpacer(),
+			buttons,
+			layout.NewSpacer(),
+		),
 	)
 
 	ui.window.SetContent(content)
@@ -138,9 +173,13 @@ func (ui *UI) formatDuration(d time.Duration) string {
 func (ui *UI) updateLabels() {
 	fyne.Do(
 		func() {
-			ui.timeLabel.SetText(ui.formatDuration(ui.timer.GetCurrentTime()))
+			ui.todayTimeLabel.SetText(ui.formatDuration(ui.timer.GetTodaySessionTime()))
 			ui.breakLabel.SetText(ui.formatDuration(ui.timer.GetCurrentBreakTime()))
 			ui.weeklyLabel.SetText(ui.formatDuration(ui.timer.GetWeeklyTime()))
+			ui.dailyLabel.SetText(ui.formatDuration(ui.timer.GetDailyTime()))
+			ui.firstStartLabel.SetText(ui.timer.GetDayFirstStartTime())
+			ui.yesterdayDailyLabel.SetText(ui.formatDuration(ui.timer.YesterdayTotal))
+			ui.yesterdayStartLabel.SetText(ui.timer.GetYesterdayFirstStartTime())
 
 			// Update break button text with animated dots when on break
 			if ui.timer.IsOnBreak {

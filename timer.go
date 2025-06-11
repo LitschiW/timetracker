@@ -12,14 +12,18 @@ type Session struct {
 }
 
 type Timer struct {
-	CurrentSession *Session      `json:"current_session"`
-	Sessions       []Session     `json:"sessions"`
-	IsRunning      bool          `json:"is_running"`
-	IsOnBreak      bool          `json:"is_on_break"`
-	BreakStart     time.Time     `json:"break_start"`
-	SessionStart   time.Time     `json:"session_start"`
-	storage        *Storage      // Add storage field
-	weeklyTotal    time.Duration // Cached weekly total
+	TodaySession        *Session      `json:"today_session"`
+	Sessions            []Session     `json:"sessions"`
+	IsRunning           bool          `json:"is_running"`
+	IsOnBreak           bool          `json:"is_on_break"`
+	BreakStart          time.Time     `json:"break_start"`
+	SessionStart        time.Time     `json:"session_start"`
+	DayFirstStart       time.Time     `json:"day_first_start"`
+	DailyTotal          time.Duration `json:"daily_total"`
+	YesterdayTotal      time.Duration `json:"yesterday_total"`
+	YesterdayFirstStart time.Time     `json:"yesterday_first_start"`
+	storage             *Storage
+	weeklyTotal         time.Duration
 }
 
 func NewTimer() *Timer {
@@ -37,8 +41,19 @@ func (t *Timer) SetStorage(s *Storage) {
 func (t *Timer) Start() {
 	if !t.IsRunning {
 		now := time.Now()
-		t.CurrentSession = &Session{
-			Date: now.Format("2006-01-02"),
+		currentDate := now.Format("2006-01-02")
+
+		// Check for day transition
+		t.checkAndHandleDayTransition()
+
+		// Check if this is the first session of a new day
+		if t.DayFirstStart.IsZero() {
+			t.DayFirstStart = now
+			t.DailyTotal = 0
+		}
+
+		t.TodaySession = &Session{
+			Date: currentDate,
 		}
 		t.SessionStart = now
 		t.IsRunning = true
@@ -51,13 +66,22 @@ func (t *Timer) Stop() {
 			t.StopBreak()
 		}
 
-		t.CurrentSession.Duration = int64(time.Since(t.SessionStart).Seconds())
+		sessionDuration := time.Since(t.SessionStart)
+		breakDuration := time.Duration(t.TodaySession.BreakTime) * time.Second
+		workDuration := sessionDuration - breakDuration
+
+		t.TodaySession.Duration = int64(sessionDuration.Seconds())
 		// Only store sessions longer than 1 second
-		if t.CurrentSession.Duration > 1 {
-			t.Sessions = append(t.Sessions, *t.CurrentSession)
+		if t.TodaySession.Duration > 1 {
+			t.Sessions = append(t.Sessions, *t.TodaySession)
 			t.updateWeeklyTotal() // Update weekly total when adding new session
+
+			// Update daily total
+			if workDuration > 0 {
+				t.DailyTotal += workDuration
+			}
 		}
-		t.CurrentSession = nil
+		t.TodaySession = nil
 		t.IsRunning = false
 	}
 }
@@ -72,37 +96,37 @@ func (t *Timer) StartBreak() {
 func (t *Timer) StopBreak() {
 	if t.IsOnBreak {
 		breakDuration := time.Since(t.BreakStart).Seconds()
-		t.CurrentSession.BreakTime += int64(breakDuration)
+		t.TodaySession.BreakTime += int64(breakDuration)
 		t.IsOnBreak = false
 	}
 }
 
 func (t *Timer) Reset() {
 	// Don't save the current session when resetting
-	t.CurrentSession = nil
+	t.TodaySession = nil
 	t.IsRunning = false
 	t.IsOnBreak = false
 }
 
-func (t *Timer) GetCurrentTime() time.Duration {
-	if !t.IsRunning || t.CurrentSession == nil {
+func (t *Timer) GetTodaySessionTime() time.Duration {
+	if !t.IsRunning || t.TodaySession == nil {
 		return 0
 	}
 
 	duration := time.Since(t.SessionStart)
-	return duration - time.Duration(t.CurrentSession.BreakTime)*time.Second
+	return duration - time.Duration(t.TodaySession.BreakTime)*time.Second
 }
 
 func (t *Timer) GetCurrentBreakTime() time.Duration {
-	if !t.IsRunning || t.CurrentSession == nil {
+	if !t.IsRunning || t.TodaySession == nil {
 		return 0
 	}
 
 	if t.IsOnBreak {
 		currentBreak := time.Since(t.BreakStart)
-		return time.Duration(t.CurrentSession.BreakTime)*time.Second + currentBreak
+		return time.Duration(t.TodaySession.BreakTime)*time.Second + currentBreak
 	}
-	return time.Duration(t.CurrentSession.BreakTime) * time.Second
+	return time.Duration(t.TodaySession.BreakTime) * time.Second
 }
 
 // updateWeeklyTotal recalculates and caches the weekly total
@@ -158,8 +182,8 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 	total := t.weeklyTotal
 
 	// Add current session if running
-	if t.IsRunning && t.CurrentSession != nil {
-		sessionTime, err := time.Parse("2006-01-02", t.CurrentSession.Date)
+	if t.IsRunning && t.TodaySession != nil {
+		sessionTime, err := time.Parse("2006-01-02", t.TodaySession.Date)
 		if err == nil { // Only add if date is valid
 			sessionWeek := t.getWeekNumber(sessionTime)
 			sessionYear := sessionTime.Year()
@@ -169,7 +193,7 @@ func (t *Timer) GetWeeklyTime() time.Duration {
 			if sessionWeek == currentWeek && sessionYear == currentYear {
 				// Calculate current session duration excluding breaks
 				currentDuration := time.Since(t.SessionStart)
-				totalBreakTime := time.Duration(t.CurrentSession.BreakTime) * time.Second
+				totalBreakTime := time.Duration(t.TodaySession.BreakTime) * time.Second
 				if t.IsOnBreak {
 					totalBreakTime += time.Since(t.BreakStart)
 				}
@@ -197,7 +221,7 @@ func (t *Timer) MarshalJSON() ([]byte, error) {
 		WeeklyTime  time.Duration `json:"weekly_time"`
 	}{
 		Alias:       (*Alias)(t),
-		CurrentTime: t.GetCurrentTime(),
+		CurrentTime: t.GetTodaySessionTime(),
 		WeeklyTime:  t.GetWeeklyTime(),
 	})
 }
@@ -215,4 +239,54 @@ func (t *Timer) UnmarshalJSON(data []byte) error {
 		return err
 	}
 	return nil
+}
+
+// Add method to get current day's total time
+func (t *Timer) GetDailyTime() time.Duration {
+	total := t.DailyTotal
+
+	// Add current session if running
+	if t.IsRunning && t.TodaySession != nil {
+		currentDuration := time.Since(t.SessionStart)
+		totalBreakTime := time.Duration(t.TodaySession.BreakTime) * time.Second
+		if t.IsOnBreak {
+			totalBreakTime += time.Since(t.BreakStart)
+		}
+		workDuration := currentDuration - totalBreakTime
+		if workDuration > 0 {
+			total += workDuration
+		}
+	}
+
+	return total
+}
+
+// Add method to get formatted first start time of the day
+func (t *Timer) GetDayFirstStartTime() string {
+	if t.DayFirstStart.IsZero() {
+		return "Not started today"
+	}
+	return t.DayFirstStart.Format("15:04:05")
+}
+
+// Add method to handle day transition
+func (t *Timer) checkAndHandleDayTransition() {
+	now := time.Now()
+	if !t.DayFirstStart.IsZero() && t.DayFirstStart.Format("2006-01-02") != now.Format("2006-01-02") {
+		// Store yesterday's data before resetting
+		t.YesterdayTotal = t.DailyTotal
+		t.YesterdayFirstStart = t.DayFirstStart
+
+		// Reset today's tracking
+		t.DayFirstStart = time.Time{}
+		t.DailyTotal = 0
+	}
+}
+
+// Add method to get yesterday's first start time
+func (t *Timer) GetYesterdayFirstStartTime() string {
+	if t.YesterdayFirstStart.IsZero() {
+		return "No data"
+	}
+	return t.YesterdayFirstStart.Format("15:04:05")
 }
